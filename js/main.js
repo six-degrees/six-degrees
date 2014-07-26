@@ -15,7 +15,8 @@ $startingUser.add($endingUser).on("keyup", function () {
 });
 
 
-var maxConnections = 6 * 6;
+var maxConnections = Math.pow(6, 6);
+var userQue = [];
 
 function getFollowers(username) {
 
