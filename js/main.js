@@ -31,6 +31,12 @@ function getFollowers(username) {
     });
 
     request.then(function(data) {
+
+        // If there is no data don't continue
+        if (data.following.length < 1) {
+            return
+        }
+
         if (maxConnections >= 0) {
             console.log(data.following);
             for (var i = 0; i < data.following.length; i++) {
