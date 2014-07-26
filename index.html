@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Six Degrees of GitHub</title>
+
+    <link href="http://bootswatch.com/flatly/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="css/theme.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <header class="navbar navbar-default navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="#">Six Degrees</a>
+        </div>
+        <nav class="navbar-collapse collapse">
+          <ul class="navbar-nav nav">
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="page-header">
+        <h1>Six Degrees of GitHub</h1>
+      </div>
+
+      <div class="row">
+        <div class="col-xs-12">
+          <p>
+            Have you ever wondered how close together users were on GitHub? We are using data from GitHub's API to find just how close together users really are.
+          </p>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-sm-4">
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              Lets start with
+            </div>
+            <div class="panel-body">
+              <input type="text" class="js-starting-user-login form-control" placeholder="GitHub username (kevin-brown, etc.)" required="requied" autofocus="autofocus" tabindex="1" />
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-4 text-center dots-container js-connect-dots">
+          <button class="btn btn-primary btn-connect-dots js-btn-connect-dots" tabindex="3">
+            Lets connect these dots!
+          </button>
+        </div>
+
+        <div class="col-sm-4">
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              And end with
+            </div>
+            <div class="panel-body">
+              <input type="text" class="js-ending-user-login form-control" placeholder="GitHub username (gunthercox, etc.)" required="requied" tabindex="2" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="//code.jquery.com/jquery-2.1.1.min.js" type="text/javascript"></script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>

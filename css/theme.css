@@ -1,0 +1,20 @@
+body {
+    font-size: 16px;
+    padding-top: 50px;
+}
+
+.dots-container {
+    line-height: 110px;
+}
+
+.dots-container {
+    height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: opacity 1s;
+}
+
+.dots-container.connectable {
+    height: 110px;
+    opacity: 1;
+}

@@ -20,4 +20,5 @@ were converted in a JSON formatted set of data files that could be used on the
 front end when determining the number of steps required.
 
 [ghdc]: https://github.com/blog/1864-third-annual-github-data-challenge
+[ghtorrent]: http://ghtorrent.org/
 [six-degrees]: http://kevinbrown.in/six-degrees
