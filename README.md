@@ -4,7 +4,7 @@ This project was created for the [2014 GitHub Data Challenge][ghdc].  The goal
 of the project is to take two users and determine how closely related they are
 within GitHub's social environment.
 
-This project is [available through GitHub pages][six-degrees].
+The project is available online at http://six-degrees.kevinbrown.in/.
 
 How it works
 ============
