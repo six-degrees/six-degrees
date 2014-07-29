@@ -3,4 +3,4 @@
 	url = https://github.com/kevin-brown/sdgh-data-followers.git
 [submodule "data/following"]
 	path = data/following
-	url = git@github.com:kevin-brown/sdgh-data-following.git
+	url = https://github.com/kevin-brown/sdgh-data-following.git
