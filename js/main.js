@@ -43,11 +43,12 @@ $btnConnectTheDots.on("click", function (evt) {
 
     clearData();
 
-    scanDegree([$startingUser.val()], $endingUser.val());
+    scanConcurrently([$startingUser.val()], $endingUser.val());
 });
 
 var userCache = {};
 var userQueue = {};
+var reverseUserQueue = {};
 
 var activeConnections = 0;
 var maxConnections = 10;
@@ -57,14 +58,23 @@ var activeDegree = 1;
 var foundChain = [];
 var searchChain = false;
 
-function scanDegree(chain, ending) {
+function scanConcurrently(startingUser, endingUser) {
+    scanDegree([startingUser], endingUser);
+    scanDegree([endingUser], startingUser, true);
+}
+
+function scanDegree(chain, ending, reverseSearch) {
     if (foundChain.length > 0) {
         return;
     }
 
     var currentUser = chain[chain.length - 1];
 
-    var userData = checkUser(chain.length, currentUser);
+    if (reverseSearch) {
+        var userData = checkUser(chain.length, currentUser, true);
+    } else {
+        var userData = checkUser(chain.length, currentUser);
+    }
 
     userData.then(function (data) {
         for (var u = 0; u < data.following.length; u++) {
@@ -105,26 +115,36 @@ function displayChain(chain) {
  A promise will be returned that will resolve (with the follower data) if the
  user was found.  If the user was not found, the promise will never resolve.
  */
-function checkUser(degree, username) {
+function checkUser(degree, username, reverseSearch) {
     var $p = $.Deferred();
 
-    if (!(degree in userQueue)) {
-        userQueue[degree] = [];
+    // reverseSearch is true when searching backwards.
+    if (!reverseSearch) {
+        if (!(degree in userQueue)) {
+            userQueue[degree] = [];
+        }
+
+        userQueue[degree].push([username, $p]);
+        checkQueue(userQueue[activeDegree]);
+    } else {
+        if (!(degree in reverseUserQueue)) {
+            reverseUserQueue[degree] = [];
+        }
+
+        reverseUserQueue[degree].push([username, $p]);
+        checkQueue(reverseUserQueue[activeDegree]);
     }
-
-    userQueue[degree].push([username, $p]);
-
-    checkQueue();
 
     return $p;
 }
 
-function checkQueue () {
+function checkQueue(queue) {
     if (!searchChain) {
         return;
     }
 
-    var queue = userQueue[activeDegree];
+    // Ensure the queue is an array.
+    queue = queue || [];
 
     if (queue.length == 0) {
         if (activeConnections == 0) {
@@ -217,6 +237,7 @@ function clearData() {
     activeDegree = 1;
     activeConnections = 0;
     userQueue = {};
+    reverseUserQueue = {};
     userCache = {};
 }
 
