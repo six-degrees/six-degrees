@@ -43,10 +43,23 @@ $btnConnectTheDots.on("click", function (evt) {
 
     clearData();
 
-    scanConcurrently([$startingUser.val()], $endingUser.val());
+    scanConcurrently($startingUser.val(), $endingUser.val());
 });
 
-var userCache = {};
+// intersect function grabbed from http://stackoverflow.com/a/16227294/359284
+// Thanks to Paul S. for the Stack Overflow answer
+
+function intersect(a, b) {
+    var t;
+    if (b.length > a.length) t = b, b = a, a = t; // indexOf to loop over shorter
+    return a.filter(function (e) {
+        if (b.indexOf(e) !== -1) return true;
+    });
+}
+
+var followersCache = {};
+var followingCache = {};
+
 var userQueue = {};
 var reverseUserQueue = {};
 
@@ -58,53 +71,128 @@ var activeDegree = 1;
 var foundChain = [];
 var searchChain = false;
 
+var followersDiscovered = [];
+var followingDiscovered = [];
+
+var followersChains = [];
+var followingChains = [];
+
 function scanConcurrently(startingUser, endingUser) {
-    scanDegree([startingUser], endingUser);
-    scanDegree([endingUser], startingUser, true);
+    followingChains = [[startingUser]];
+    followersChains = [[endingUser]];
+
+    followingDiscovered = [startingUser];
+    followersDiscovered = [endingUser];
+
+    scanDegree([startingUser], false);
+    scanDegree([endingUser], true);
 }
 
-function scanDegree(chain, ending, reverseSearch) {
-    if (foundChain.length > 0) {
+function scanDegree(chain, reverseSearch) {
+    if (!searchChain) {
         return;
     }
 
     var currentUser = chain[chain.length - 1];
 
-    if (reverseSearch) {
-        var userData = checkUser(chain.length, currentUser, true);
-    } else {
-        var userData = checkUser(chain.length, currentUser);
-    }
+    var userData = checkUser(chain.length, currentUser, reverseSearch);
 
     userData.then(function (data) {
-        for (var u = 0; u < data.following.length; u++) {
-            var follower = data.following[u];
+        var users = [];
+        var discovered = [];
+        var chains = [];
+
+        if (reverseSearch) {
+            users = data.followers;
+            discovered = followersDiscovered;
+            chains = followersChains;
+        } else {
+            users = data.following;
+            discovered = followingDiscovered;
+            chains = followingChains;
+        }
+
+        for (var u = 0; u < users.length; u++) {
+            var follower = users[u];
+            var clonedChain = chain.slice();
+
+            clonedChain.push(follower);
+
+            if (discovered.indexOf(follower) < 0) {
+                discovered.push(follower);
+                chains.push(clonedChain);
+            }
+        }
+
+        intersection = intersect(followersDiscovered, followingDiscovered);
+
+        if (intersection.length > 0) {
+            displayChain(intersection);
+            return;
+        }
+
+        for (var u = 0; u < users.length; u++) {
+            var follower = users[u];
 
             var clonedChain = chain.slice();
 
             clonedChain.push(follower);
 
-            if (follower == ending) {
-                displayChain(clonedChain);
-                return;
-            }
-
-            scanDegree(clonedChain, ending);
+            scanDegree(clonedChain, reverseSearch);
         }
     });
 }
 
 /*
  Display the chain of users that can be used to connect the starting user to the
- ending user.  The first element passed in the array should be the starting
- user, and the last element should be the ending user.  Any other elements
- should appear in the array in the order that can be used to create the chain
- again.
+ ending user.  The users who intersected between the chains of followers and
+ users being followed should be passed as the first argument.
+
+ The chain of users that allowed for this intersection will be determined by
+ searching through the stored chains and then displayed to the user.
  */
-function displayChain(chain) {
+function displayChain(intersection) {
     searchChain = false;
-    foundChain = chain;
-    console.log(chain);
+
+    for(var i = 0; i < intersection.length; i++) {
+        var intersect = intersection[i];
+
+        var startChain = [];
+        var endChain = [];
+
+        for(var u = 0; u < followingChains.length; u++) {
+            var chain = followingChains[u];
+
+            if (chain[chain.length - 1] == intersect) {
+                startChain = chain;
+                break;
+            }
+        }
+
+        for(var u = 0; u < followersChains.length; u++) {
+            var chain = followersChains[u];
+
+            if (chain[chain.length - 1] == intersect) {
+                endChain = chain;
+                break;
+            }
+        }
+
+        // The end chain has the last user first, so we need to reverse it.
+        // This will allow the last user to be at the end, in the same order as
+        // the starting array.
+        endChain.reverse();
+
+        // The starting array's last user should match the first user of the end
+        // array, so we will pop it off.  This will allow the two arrays to read
+        // without duplicates when concatenated.
+        startChain.pop();
+
+        foundChain = startChain.concat(endChain);
+        console.log(intersection, foundChain);
+
+        return;
+    }
 }
 
 /*
@@ -125,20 +213,20 @@ function checkUser(degree, username, reverseSearch) {
         }
 
         userQueue[degree].push([username, $p]);
-        checkQueue(userQueue[activeDegree]);
+        checkQueue(userQueue[activeDegree], "getFollowers");
     } else {
         if (!(degree in reverseUserQueue)) {
             reverseUserQueue[degree] = [];
         }
 
         reverseUserQueue[degree].push([username, $p]);
-        checkQueue(reverseUserQueue[activeDegree]);
+        checkQueue(reverseUserQueue[activeDegree], "getFollowing");
     }
 
     return $p;
 }
 
-function checkQueue(queue) {
+function checkQueue(queue, checkMethod) {
     if (!searchChain) {
         return;
     }
@@ -147,12 +235,17 @@ function checkQueue(queue) {
     queue = queue || [];
 
     if (queue.length == 0) {
-        if (activeConnections == 0) {
-            activeDegree++;
-            return;
-        } else {
-            window.setTimeout(checkQueue, 100);
-            return;
+        var forwardQueue = userQueue[activeDegree];
+        var reverseQueue = reverseUserQueue[activeDegree];
+
+        if (forwardQueue.length === 0 && reverseQueue.length === 0) {
+            if (activeConnections == 0) {
+                activeDegree++;
+                return;
+            } else {
+                window.setTimeout(checkQueue, 100, queue, checkMethod);
+                return;
+            }
         }
     }
 
@@ -169,7 +262,9 @@ function checkQueue(queue) {
 
         activeConnections += 1;
 
-        var request = getFollowers(userData[0]);
+        var method = window[checkMethod];
+
+        var request = method(userData[0]);
         var $p = userData[1];
 
         // If the user has already been searched, ignore the promise
@@ -207,8 +302,8 @@ function checkQueue(queue) {
    the request has not already been made.
  */
 function getFollowers(username) {
-    if (username in userCache) {
-        return userCache[username];
+    if (username in followersCache) {
+        return followersCache[username];
     }
 
     var userUrl = "data/followers/json/" + username + ".json";
@@ -220,11 +315,46 @@ function getFollowers(username) {
     });
 
     request.then(function () {
-        userCache[username] = true;
+        followersCache[username] = true;
     });
 
     request.fail(function () {
-        userCache[username] = true;
+        followersCache[username] = false;
+    })
+
+    return request;
+}
+
+/*
+ Try to make a request to get the people following a user.
+
+ Note:
+ - This will return `true` if the request has already been made and the list of
+   followers could be retrieved.
+ - This will return `false` if the request has already been made and the list of
+   followers could not be retrieved.
+ - This will return a jQuery promise object containing the outgoing request if
+   the request has not already been made.
+ */
+function getFollowing(username) {
+    if (username in followingCache) {
+        return followingCache[username];
+    }
+
+    var userUrl = "data/following/json/" + username + ".json";
+
+    var request = $.ajax({
+        url: userUrl,
+        contentType: "application/json",
+        type: "GET"
+    });
+
+    request.then(function () {
+        followingCache[username] = true;
+    });
+
+    request.fail(function () {
+        followingCache[username] = false;
     })
 
     return request;
@@ -236,9 +366,18 @@ function getFollowers(username) {
 function clearData() {
     activeDegree = 1;
     activeConnections = 0;
+
     userQueue = {};
     reverseUserQueue = {};
-    userCache = {};
+
+    followersCache = {};
+    followingCache = {};
+
+    followersDiscovered = [];
+    followingDiscovered = [];
+
+    followersChains = [];
+    followingChains = [];
 }
 
 /*
