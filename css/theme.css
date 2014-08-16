@@ -18,3 +18,17 @@ body {
     height: 110px;
     opacity: 1;
 }
+
+.user-profile {
+    cursor: pointer;
+    text-decoration: none !important;
+}
+
+.user-name {
+    font-weight: bold;
+}
+
+.user-avatar {
+    width: 72px;
+    height: 72px;
+}

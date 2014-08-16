@@ -4,6 +4,8 @@ var $endingUser = $(".js-ending-user-login");
 var $connectTheDots = $(".js-connect-dots");
 var $btnConnectTheDots = $(".js-btn-connect-dots");
 
+var $followersChain = $(".js-followers-chain");
+
 var followingSearch = new Search("data/followers/json/");
 var followersSearch = new Search("data/following/json/");
 
@@ -87,7 +89,14 @@ $btnConnectTheDots.on("click", function (evt) {
 });
 
 function displayChain (chain) {
-  console.log(chain);
+  $followersChain.empty();
+
+  chain.forEach(function (user) {
+    var $user = $("<a />");
+    var userObject = new User(user, $user);
+
+    $followersChain.append($user);
+  });
 }
 
 function reconstructChain (intersection) {
