@@ -4,6 +4,43 @@ var $endingUser = $(".js-ending-user-login");
 var $connectTheDots = $(".js-connect-dots");
 var $btnConnectTheDots = $(".js-btn-connect-dots");
 
+var $progBeforeStart = $(".js-before-start");
+var $progDuring = $(".js-during");
+var $progLimitContinue = $(".js-limit-continue");
+var $progFoundConnection = $(".js-found-connection");
+var $progError = $(".js-error");
+
+var $followersChain = $(".js-followers-chain");
+
+var currentStep = 0;
+
+var followingSearch = new Search("data/followers/json/");
+var followersSearch = new Search("data/following/json/");
+
+followingSearch.getNextUsers = function (user) {
+  return user.following;
+}
+
+followersSearch.getNextUsers = function (user) {
+  return user.followers;
+}
+
+$progDuring.hide();
+$progLimitContinue.hide();
+$progFoundConnection.hide();
+$progError.hide();
+
+// intersect function grabbed from http://stackoverflow.com/a/16227294/359284
+// Thanks to Paul S. for the Stack Overflow answer
+
+function intersect(a, b) {
+    var t;
+    if (b.length > a.length) t = b, b = a, a = t; // indexOf to loop over shorter
+    return a.filter(function (e) {
+        if (b.indexOf(e) !== -1) return true;
+    });
+}
+
 /*
  Register a check on the `keyup` event of the starting and ending user input
  boxes.
@@ -26,205 +63,159 @@ $startingUser.add($endingUser).on("keyup", function () {
 });
 
 $btnConnectTheDots.on("click", function (evt) {
-    evt.preventDefault();
+  evt.preventDefault();
 
-    // Only stop the queue if the search is still running.
-    if ((activeConnections > 0 || activeDegree > 1) && searchChain) {
-        stopSearch();
+  currentStep = 0;
 
-        console.log("Stopped the search");
+  updateCurrentStep(++currentStep);
 
-        return;
+  var startingUser = $.trim($startingUser.val());
+  var endingUser = $.trim($endingUser.val());
+
+  $progFoundConnection.fadeOut();
+  $progLimitContinue.fadeOut();
+  $progBeforeStart.fadeOut();
+  $progError.fadeOut();
+  $progDuring.fadeIn();
+
+  if ($btnConnectTheDots.hasClass("btn-danger")) {
+    $btnConnectTheDots.removeClass("btn-danger");
+    $btnConnectTheDots.text("Lets connect these dots!");
+
+    $progDuring.fadeOut();
+    $progBeforeStart.fadeIn();
+
+    followingSearch.reset();
+    followersSearch.reset();
+    return;
+  }
+
+  $btnConnectTheDots.addClass("btn-danger").text("Stop searching");
+
+  followingSearch.reset();
+  followersSearch.reset();
+
+  followingSearch.add(startingUser);
+  followersSearch.add(endingUser);
+
+  followingSearch.queueFinished = function () {
+    var intersection = intersect(followingSearch.discovered, followersSearch.discovered);
+
+    this.shiftQueue();
+
+    if (intersection.length == 0) {
+      console.log(currentStep);
+      updateCurrentStep(++currentStep);
+      followersSearch.processQueue();
+    } else {
+      displayChain(reconstructChain(intersection));
     }
+  }
 
-    searchChain = true;
+  followersSearch.queueFinished = function () {
+    var intersection = intersect(followingSearch.discovered, followersSearch.discovered);
 
-    foundChain = [];
+    this.shiftQueue();
 
-    clearData();
+    if (intersection.length == 0) {
+      updateCurrentStep(++currentStep);
+      followingSearch.processQueue();
+    } else {
+      displayChain(reconstructChain(intersection));
+    }
+  }
 
-    scanDegree([$startingUser.val()], $endingUser.val());
+  var $checkStarting = followingSearch.checkUser(startingUser);
+  var $checkEnding = followersSearch.checkUser(endingUser);
+
+  $.when($checkStarting, $checkEnding)
+    .then(function () {
+      followingSearch.processQueue();
+    })
+    .fail(function () {
+      $progDuring.fadeOut();
+      $progError.fadeIn();
+    });
 });
 
-var userCache = {};
-var userQueue = {};
+function updateCurrentStep (step) {
+  var $step = $(".js-step-count");
 
-var activeConnections = 0;
-var maxConnections = 10;
+  var steps = step + " steps";
 
-var activeDegree = 1;
+  if (step == 1) {
+    steps = "one step";
+  }
 
-var foundChain = [];
-var searchChain = false;
-
-function scanDegree(chain, ending) {
-    if (foundChain.length > 0) {
-        return;
-    }
-
-    var currentUser = chain[chain.length - 1];
-
-    var userData = checkUser(chain.length, currentUser);
-
-    userData.then(function (data) {
-        for (var u = 0; u < data.following.length; u++) {
-            var follower = data.following[u];
-
-            var clonedChain = chain.slice();
-
-            clonedChain.push(follower);
-
-            if (follower == ending) {
-                displayChain(clonedChain);
-                return;
-            }
-
-            scanDegree(clonedChain, ending);
-        }
-    });
+  $step.text(steps);
 }
 
-/*
- Display the chain of users that can be used to connect the starting user to the
- ending user.  The first element passed in the array should be the starting
- user, and the last element should be the ending user.  Any other elements
- should appear in the array in the order that can be used to create the chain
- again.
- */
-function displayChain(chain) {
-    searchChain = false;
-    foundChain = chain;
-    console.log(chain);
+function displayChain (chain) {
+  $progDuring.fadeOut();
+  $progFoundConnection.fadeIn();
+
+  $(".js-start-user").text(chain[0]);
+  $(".js-end-user").text(chain[chain.length - 1]);
+
+  $followersChain.empty();
+
+  chain.forEach(function (user) {
+    var $user = $("<a />");
+    var userObject = new User(user, $user);
+
+    $followersChain.append($user);
+  });
+
+  $btnConnectTheDots.removeClass("btn-danger");
+  $btnConnectTheDots.text("Lets connect these dots!");
 }
 
-/*
- Push a user into the checking queue under a specific degree.  This will also
- fire off the queue check to ensure the queue is always running when users
- should be searched.
+function reconstructChain (intersection) {
+  var followingChains = followingSearch.chains;
+  var followersChains = followersSearch.chains;
 
- A promise will be returned that will resolve (with the follower data) if the
- user was found.  If the user was not found, the promise will never resolve.
- */
-function checkUser(degree, username) {
-    var $p = $.Deferred();
+  var completeChain = [];
 
-    if (!(degree in userQueue)) {
-        userQueue[degree] = [];
+  intersection.forEach(function (intersectingUser) {
+    var startChain = [];
+    var endChain = [];
+
+    if (completeChain.length > 0) {
+      return;
     }
 
-    userQueue[degree].push([username, $p]);
+    followingChains.forEach(function (chain) {
+      var user = chain[chain.length - 1];
 
-    checkQueue();
-
-    return $p;
-}
-
-function checkQueue () {
-    if (!searchChain) {
-        return;
-    }
-
-    var queue = userQueue[activeDegree];
-
-    if (queue.length == 0) {
-        if (activeConnections == 0) {
-            activeDegree++;
-            return;
-        } else {
-            window.setTimeout(checkQueue, 100);
-            return;
-        }
-    }
-
-    console.log(activeDegree, activeConnections, maxConnections);
-
-    if (activeConnections < maxConnections) {
-        var userData = queue.splice(0, 1);
-
-        if (userData.length === 0) {
-            return;
-        }
-
-        userData = userData[0];
-
-        activeConnections += 1;
-
-        var request = getFollowers(userData[0]);
-        var $p = userData[1];
-
-        // If the user has already been searched, ignore the promise
-        // This prevents us from searching the same branch multiple times
-        if (request === true) {
-            activeConnections -= 1;
-            return;
-        }
-
-        // If the user could not be found before, assume it can't be found again
-        if (request === false) {
-            activeConnections -= 1;
-            return;
-        }
-
-        request.then(function (data) {
-            $p.resolve(data);
-        })
-
-        request.always(function () {
-            activeConnections -= 1;
-        });
-    }
-}
-
-/*
- Try to make a request to get the followers for a user.
-
- Note:
- - This will return `true` if the request has already been made and the list of
-   followers could be retrieved.
- - This will return `false` if the request has already been made and the list of
-   followers could not be retrieved.
- - This will return a jQuery promise object containing the outgoing request if
-   the request has not already been made.
- */
-function getFollowers(username) {
-    if (username in userCache) {
-        return userCache[username];
-    }
-
-    var userUrl = "data/followers/json/" + username + ".json";
-
-    var request = $.ajax({
-        url: userUrl,
-        contentType: "application/json",
-        type: "GET"
+      if (user == intersectingUser) {
+        startChain = chain;
+      }
     });
 
-    request.then(function () {
-        userCache[username] = true;
+    if (startChain.length == 0) {
+      return;
+    }
+
+    followersChains.forEach(function (chain) {
+      var user = chain[chain.length - 1];
+
+      if (user == intersectingUser) {
+        endChain = chain;
+      }
     });
 
-    request.fail(function () {
-        userCache[username] = true;
-    })
+    if (endChain.length == 0) {
+      return;
+    }
 
-    return request;
-}
+    // Reverse the chain so it matches the natural order
+    endChain.reverse();
 
-/*
- Reset the variables used during the search so that another search can be done.
- */
-function clearData() {
-    activeDegree = 1;
-    activeConnections = 0;
-    userQueue = {};
-    userCache = {};
-}
+    // Pop the duplicated user (the one who intersected) from the start chain
+    startChain.pop();
 
-/*
- Stop the current search and clear out any data that has been stored.
- */
-function stopSearch() {
-    searchChain = false;
+    completeChain = startChain.concat(endChain);
+  })
 
-    clearData();
+  return completeChain;
 }
