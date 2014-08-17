@@ -18,6 +18,14 @@ Search.prototype.reset = function () {
   this.chains = [];
 }
 
+Search.prototype.checkUser = function (user) {
+  return $.ajax({
+    url: this.url + user + ".json",
+    contentType: "application/json",
+    type: "GET"
+  });
+}
+
 Search.prototype.add = function (user, chain) {
   chain = chain ? chain.slice() : [];
 
@@ -123,11 +131,7 @@ Search.prototype.processQueueItem = function (queueItem) {
 
   self.activeConnections += 1;
 
-  var $request = $.ajax({
-    type: "GET",
-    contentType: "application/json",
-    url: self.url + user + ".json"
-  });
+  var $request = this.checkUser(user);
 
   $request.then(function (user) {
     var users = self.getNextUsers(user);

@@ -40,7 +40,7 @@
               Lets start with
             </div>
             <div class="panel-body">
-              <input type="text" class="js-starting-user-login form-control" value="kevin-brown" placeholder="GitHub username (kevin-brown, etc.)" required="requied" autofocus="autofocus" tabindex="1" />
+              <input type="text" class="js-starting-user-login form-control" placeholder="GitHub username (kevin-brown, etc.)" required="requied" autofocus="autofocus" tabindex="1" />
             </div>
           </div>
         </div>
@@ -57,11 +57,51 @@
               And end with
             </div>
             <div class="panel-body">
-              <input type="text" class="js-ending-user-login form-control" value="gunthercox" placeholder="GitHub username (gunthercox, etc.)" required="requied" tabindex="2" />
+              <input type="text" class="js-ending-user-login form-control" placeholder="GitHub username (gunthercox, etc.)" required="requied" tabindex="2" />
             </div>
           </div>
         </div>
       </div>
+
+      <hr />
+
+      <div class="row">
+        <div class="col-xs-12 text-center">
+          <div class="js-before-start">
+            Enter two GitHub usernames and hit start to determine how many steps away they are.
+          </div>
+
+          <div class="js-during">
+            <i class="fa fa-spin fa-spinner"></i>
+            We are looking through the followers to determine how many steps away they are.
+            <span class="js-during-updates">
+              We have gone <strong class="js-step-count">nowhere</strong> and are still searching.
+            </span>
+          </div>
+
+          <div class="js-limit-continue">
+            <i class="fa fa-exclamation-circle"></i>
+            We have gone <strong class="js-step-count">so far</strong> and have not been able to connect these users.
+            <button class="js-continue-searching btn btn-link btn-sm">
+              Continue searching?
+            </button>
+          </div>
+
+          <div class="js-found-connection">
+            <i class="fa fa-check-circle-o"></i>
+            It took <strong class="js-step-count">one step</strong> to connect <strong class="js-start-user">someone</strong> and <strong class="js-end-user">someone else</strong>.  Each user is shown below in the order that was used to connect them.
+          </div>
+
+          <div class="js-error">
+            <i class="fa fa-exclamation-circle"></i>
+            <strong>We could not find one of the users in our database.</strong><br />
+            Keep in mind that usernames are case-sensitive, so <em>Kevin-Brown</em> is not the same as <em>kevin-brown</em>.<br />
+            This may also mean that one of the users could not possibly be reached.
+          </div>
+        </div>
+      </div>
+
+      <hr />
 
       <div class="row js-followers-chain"></div>
     </div>

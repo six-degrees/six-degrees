@@ -4,7 +4,15 @@ var $endingUser = $(".js-ending-user-login");
 var $connectTheDots = $(".js-connect-dots");
 var $btnConnectTheDots = $(".js-btn-connect-dots");
 
+var $progBeforeStart = $(".js-before-start");
+var $progDuring = $(".js-during");
+var $progLimitContinue = $(".js-limit-continue");
+var $progFoundConnection = $(".js-found-connection");
+var $progError = $(".js-error");
+
 var $followersChain = $(".js-followers-chain");
+
+var currentStep = 0;
 
 var followingSearch = new Search("data/followers/json/");
 var followersSearch = new Search("data/following/json/");
@@ -16,6 +24,11 @@ followingSearch.getNextUsers = function (user) {
 followersSearch.getNextUsers = function (user) {
   return user.followers;
 }
+
+$progDuring.hide();
+$progLimitContinue.hide();
+$progFoundConnection.hide();
+$progError.hide();
 
 // intersect function grabbed from http://stackoverflow.com/a/16227294/359284
 // Thanks to Paul S. for the Stack Overflow answer
@@ -52,8 +65,32 @@ $startingUser.add($endingUser).on("keyup", function () {
 $btnConnectTheDots.on("click", function (evt) {
   evt.preventDefault();
 
+  currentStep = 0;
+
+  updateCurrentStep(++currentStep);
+
   var startingUser = $.trim($startingUser.val());
   var endingUser = $.trim($endingUser.val());
+
+  $progFoundConnection.fadeOut();
+  $progLimitContinue.fadeOut();
+  $progBeforeStart.fadeOut();
+  $progError.fadeOut();
+  $progDuring.fadeIn();
+
+  if ($btnConnectTheDots.hasClass("btn-danger")) {
+    $btnConnectTheDots.removeClass("btn-danger");
+    $btnConnectTheDots.text("Lets connect these dots!");
+
+    $progDuring.fadeOut();
+    $progBeforeStart.fadeIn();
+
+    followingSearch.reset();
+    followersSearch.reset();
+    return;
+  }
+
+  $btnConnectTheDots.addClass("btn-danger").text("Stop searching");
 
   followingSearch.reset();
   followersSearch.reset();
@@ -67,6 +104,8 @@ $btnConnectTheDots.on("click", function (evt) {
     this.shiftQueue();
 
     if (intersection.length == 0) {
+      console.log(currentStep);
+      updateCurrentStep(++currentStep);
       followersSearch.processQueue();
     } else {
       displayChain(reconstructChain(intersection));
@@ -79,16 +118,45 @@ $btnConnectTheDots.on("click", function (evt) {
     this.shiftQueue();
 
     if (intersection.length == 0) {
+      updateCurrentStep(++currentStep);
       followingSearch.processQueue();
     } else {
       displayChain(reconstructChain(intersection));
     }
   }
 
-  followingSearch.processQueue();
+  var $checkStarting = followingSearch.checkUser(startingUser);
+  var $checkEnding = followersSearch.checkUser(endingUser);
+
+  $.when($checkStarting, $checkEnding)
+    .then(function () {
+      followingSearch.processQueue();
+    })
+    .fail(function () {
+      $progDuring.fadeOut();
+      $progError.fadeIn();
+    });
 });
 
+function updateCurrentStep (step) {
+  var $step = $(".js-step-count");
+
+  var steps = step + " steps";
+
+  if (step == 1) {
+    steps = "one step";
+  }
+
+  $step.text(steps);
+}
+
 function displayChain (chain) {
+  $progDuring.fadeOut();
+  $progFoundConnection.fadeIn();
+
+  $(".js-start-user").text(chain[0]);
+  $(".js-end-user").text(chain[chain.length - 1]);
+
   $followersChain.empty();
 
   chain.forEach(function (user) {
@@ -97,6 +165,9 @@ function displayChain (chain) {
 
     $followersChain.append($user);
   });
+
+  $btnConnectTheDots.removeClass("btn-danger");
+  $btnConnectTheDots.text("Lets connect these dots!");
 }
 
 function reconstructChain (intersection) {

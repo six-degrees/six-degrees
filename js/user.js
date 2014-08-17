@@ -19,6 +19,10 @@ User.prototype._loadData = function () {
   $request.then(function (user) {
     self._displayUserData(user);
   });
+
+  $request.fail(function () {
+    self._displayError();
+  })
 }
 
 User.prototype._displayInitialData = function ($el) {
@@ -27,7 +31,7 @@ User.prototype._displayInitialData = function ($el) {
   var $content = $(
     '<div class="panel panel-default">' +
         '<div class="panel-heading js-user-name user-name"></div>' +
-        '<div class="panel-body">' +
+        '<div class="panel-body js-user-content">' +
           '<div class="row">' +
             '<div class="col-xs-5">' +
               '<img class="js-user-avatar user-avatar" />' +
@@ -44,7 +48,7 @@ User.prototype._displayInitialData = function ($el) {
     '</div>'
   );
 
-  var $userName = $content.find("js-user-name");
+  var $userName = $content.find(".js-user-name");
   var $followers = $content.find(".js-user-followers");
   var $following = $content.find(".js-user-following");
 
@@ -89,4 +93,18 @@ User.prototype._displayUserData = function (user) {
     $followers.fadeIn();
     $following.fadeIn();
   });
+}
+
+User.prototype._displayError = function () {
+  var $error = $(
+    '<div class="user-error text-center">' +
+      '<i class="fa fa-frown-o fa-3x"></i><br />' +
+      'This user can no longer be found.' +
+    '</div>'
+  )
+
+  var $body = this.$el.find(".js-user-content");
+
+  $body.empty();
+  $body.append($error);
 }
