@@ -12,13 +12,10 @@ All of the data used is taken from the latest [GHTorrent][ghtorrent] data dump.
 The latest data dump was taken on March 29th and consisted of 6 GB of compressed
 SQL dumps (25GB uncompressed) in MySQL format.
 
-Getting the data
-----------------
-The SQL dumps provided by GHTorrent were converted over to SQLite data dumps and
-imported into SQLite databases for portability.  From there, individual parts
-were converted in a JSON formatted set of data files that could be used on the
-front end when determining the number of steps required.
+You can find more information on how to retrieve and convert these database
+dumps in the [updating guide][updating].
 
 [ghdc]: https://github.com/blog/1864-third-annual-github-data-challenge
 [ghtorrent]: http://ghtorrent.org/
-[six-degrees]: http://kevinbrown.in/six-degrees
+[six-degrees]: http://six-degrees.kevinbrown.in/
+[updating]: UPDATING.md
