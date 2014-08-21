@@ -4,6 +4,8 @@ var $endingUser = $(".js-ending-user-login");
 var $connectTheDots = $(".js-connect-dots");
 var $btnConnectTheDots = $(".js-btn-connect-dots");
 
+var $form = $(".js-form");
+
 var $progBeforeStart = $(".js-before-start");
 var $progDuring = $(".js-during");
 var $progLimitContinue = $(".js-limit-continue");
@@ -62,7 +64,7 @@ $startingUser.add($endingUser).on("keyup", function () {
     }
 });
 
-$btnConnectTheDots.on("click", function (evt) {
+$form.on("submit", function (evt) {
   evt.preventDefault();
 
   currentStep = 0;
@@ -71,6 +73,10 @@ $btnConnectTheDots.on("click", function (evt) {
 
   var startingUser = $.trim($startingUser.val());
   var endingUser = $.trim($endingUser.val());
+
+  if (!startingUser || !endingUser) {
+    return;
+  }
 
   $progFoundConnection.fadeOut();
   $progLimitContinue.fadeOut();
@@ -135,6 +141,8 @@ $btnConnectTheDots.on("click", function (evt) {
     .fail(function () {
       $progDuring.fadeOut();
       $progError.fadeIn();
+
+      $btnConnectTheDots.removeClass("btn-danger").text("Lets connect these dots!");
     });
 });
 

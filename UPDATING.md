@@ -23,8 +23,10 @@ before they can be used.
 
 Decompressing the SQL dump
 --------------------------
-The SQL dump is available in a gzipped format and be decompressed through the
-command line.
+The SQL dump is available in a gzipped format and can be decompressed through
+the command line.  Keep in mind that the decompressed format will take up
+considerably more disk space, in addition to the space taken up by the
+compressed archive.
 
 ```sh
 zcat mysql-2014-08-06.sql.gz > gh-2014-08-06.sql
@@ -33,6 +35,9 @@ zcat mysql-2014-08-06.sql.gz > gh-2014-08-06.sql
 
 gunzip -c mysql-2014-08-06.sql.gz > gh-2014-08-06.sql
 ```
+
+This should create a file called `gh-2014-08-06.sql` in the same directory that
+contains a raw MySQL dump of all of the tables.
 
 Cutting out the parts that are needed
 -------------------------------------
@@ -44,16 +49,50 @@ You first need to find where these tables are created within the SQL dump.  This
 can be done by running:
 
 ```sh
-grep -n "CREATE TABLE" gh-2014-08-06.sql
+grep -n '^CREATE TABLE' gh-2014-08-06.sql
 ```
 
 Which should produce something similar to this.  Note the lines where the
 `users` and `followers` tables are being created, these will be used in the next
 section.
 
-```sh
-grep [to be finished] > reduced.sql
 ```
+25:CREATE TABLE `commit_comments` (
+259:CREATE TABLE `commit_parents` (
+3172:CREATE TABLE `commits` (
+19947:CREATE TABLE `counters` (
+19984:CREATE TABLE `followers` (
+20312:CREATE TABLE `issue_comments` (
+21590:CREATE TABLE `issue_events` (
+22789:CREATE TABLE `issue_labels` (
+22881:CREATE TABLE `issues` (
+23804:CREATE TABLE `organization_members` (
+23840:CREATE TABLE `project_commits` (
+34951:CREATE TABLE `project_members` (
+35217:CREATE TABLE `projects` (
+37047:CREATE TABLE `pull_request_comments` (
+37432:CREATE TABLE `pull_request_commits` (
+37851:CREATE TABLE `pull_request_history` (
+38732:CREATE TABLE `pull_requests` (
+38964:CREATE TABLE `repo_labels` (
+39466:CREATE TABLE `repo_milestones` (
+39493:CREATE TABLE `schema_info` (
+39515:CREATE TABLE `users` (
+40013:CREATE TABLE `watchers` (
+```
+
+You can then use these lines to tell `sed` to only print the sections of the SQL
+dump that create these specific tables.  Before each of the `CREATE` statements,
+there are six extra lines that can be ignored, as we are running in an
+environment where these tables do not already exist.
+
+```sh
+sed -n '19984,20306p; 20307q' gh-2014-08-06.sql > followers.sql
+sed -n '39515,40007p; 40008q' gh-2014-08-06.sql > users.sql
+```
+
+Two SQL files will be created, `followers.sql` and `users.sql`, which contain
+the statements for only the two tables which we need.
 
 Converting the MySQL dump to a SQLite dump
 ------------------------------------------
@@ -70,7 +109,8 @@ which adhered to all of the constraints within SQLite and
 It should be run from the command line by running:
 
 ```sh
-python convert.py reduced.sql reduced-sqlite.sql
+python convert.py followers.sql followers-sqlite.sql
+python convert.py users.sql users-sqlite.sql
 ```
 
 Which should generate a SQLite version of the MySQL dump.
@@ -80,7 +120,8 @@ Creating the SQLite database
 You should be able to create a new SQLite database by running:
 
 ```sh
-cat reduced-sqlite.sql | sqlite3 gh.db
+cat users-sqlite.sql | sqlite3 gh.db
+cat followers-sqlite.sql | sqlite3 gh.db
 ```
 
 Keep in mind that this requires `sqlite3` to be present on the system.  You may
@@ -95,7 +136,7 @@ JSON files for each user.  These files are available within the repositories for
 the data sets.
 
 ```sh
-python update.py ../gh.db .
+python update.py ../../gh.db .
 ```
 
 The first argument should be the location of the SQLite database and the second
