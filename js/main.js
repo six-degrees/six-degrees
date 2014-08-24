@@ -11,6 +11,7 @@ var $progDuring = $(".js-during");
 var $progLimitContinue = $(".js-limit-continue");
 var $progFoundConnection = $(".js-found-connection");
 var $progError = $(".js-error");
+var $progNotFound = $(".js-not-found");
 
 var $followersChain = $(".js-followers-chain");
 
@@ -31,6 +32,7 @@ $progDuring.hide();
 $progLimitContinue.hide();
 $progFoundConnection.hide();
 $progError.hide();
+$progNotFound.hide();
 
 // intersect function grabbed from http://stackoverflow.com/a/16227294/359284
 // Thanks to Paul S. for the Stack Overflow answer
@@ -83,6 +85,7 @@ $form.on("submit", function (evt) {
   $progBeforeStart.fadeOut();
   $progError.fadeOut();
   $progDuring.fadeIn();
+  $progNotFound.fadeOut();
 
   if ($btnConnectTheDots.hasClass("btn-danger")) {
     $btnConnectTheDots.removeClass("btn-danger");
@@ -106,13 +109,17 @@ $form.on("submit", function (evt) {
 
   followingSearch.queueFinished = function () {
     var intersection = intersect(followingSearch.discovered, followersSearch.discovered);
+    var hasMoreToSearch = (this.nextSearchQueue.length > 0);
 
     this.shiftQueue();
 
     if (intersection.length == 0) {
-      console.log(currentStep);
-      updateCurrentStep(++currentStep);
-      followersSearch.processQueue();
+      if (hasMoreToSearch) {
+        updateCurrentStep(++currentStep);
+        followersSearch.processQueue();
+      } else {
+        cantBeFound();
+      }
     } else {
       displayChain(reconstructChain(intersection));
     }
@@ -120,12 +127,17 @@ $form.on("submit", function (evt) {
 
   followersSearch.queueFinished = function () {
     var intersection = intersect(followingSearch.discovered, followersSearch.discovered);
+    var hasMoreToSearch = (this.nextSearchQueue.length > 0);
 
     this.shiftQueue();
 
     if (intersection.length == 0) {
-      updateCurrentStep(++currentStep);
-      followingSearch.processQueue();
+      if (hasMoreToSearch) {
+        updateCurrentStep(++currentStep);
+        followingSearch.processQueue();
+      } else {
+        cantBeFound();
+      }
     } else {
       displayChain(reconstructChain(intersection));
     }
@@ -176,6 +188,23 @@ function displayChain (chain) {
 
   $btnConnectTheDots.removeClass("btn-danger");
   $btnConnectTheDots.text("Lets connect these dots!");
+}
+
+function cantBeFound () {
+  var startingUser = $.trim($startingUser.val());
+  var endingUser = $.trim($endingUser.val());
+
+  $(".js-start-user").text(startingUser);
+  $(".js-end-user").text(endingUser);
+
+  $btnConnectTheDots.removeClass("btn-danger");
+  $btnConnectTheDots.text("Lets connect these dots!");
+
+  $progDuring.fadeOut();
+  $progNotFound.fadeIn();
+
+  followingSearch.reset();
+  followersSearch.reset();
 }
 
 function reconstructChain (intersection) {
