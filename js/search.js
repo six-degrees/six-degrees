@@ -97,7 +97,10 @@ Search.prototype.processQueue = function () {
 
   // Process the queue until it is empty
   while (self.searchQueue.length > 0) {
-    console.log("Processing queue...");
+    // Keep pushing to the console to make sure it didn't stall
+    if (console != null && console.log != null) {
+      console.log("Processing queue...");
+    }
 
     // Check to see if all of the connections are in use
     if (self.activeConnections >= self.MAXIMUM_ACTIVE_CONNECTIONS) {
