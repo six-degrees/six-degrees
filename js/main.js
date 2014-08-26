@@ -40,7 +40,7 @@ $progNotFound.hide();
 function intersect(a, b) {
     var t;
     if (b.length > a.length) t = b, b = a, a = t; // indexOf to loop over shorter
-    return a.filter(function (e) {
+    return $.grep(a, function (e) {
         if (b.indexOf(e) !== -1) return true;
     });
 }
@@ -179,8 +179,10 @@ function displayChain (chain) {
 
   $followersChain.empty();
 
-  chain.forEach(function (user) {
+  $(chain).each(function (idx) {
+    var user = chain[idx];
     var $user = $("<a />");
+
     var userObject = new User(user, $user);
 
     $followersChain.append($user);
@@ -213,7 +215,9 @@ function reconstructChain (intersection) {
 
   var completeChain = [];
 
-  intersection.forEach(function (intersectingUser) {
+  $(intersection).each(function (idx) {
+    var intersectingUser = intersection[idx];
+
     var startChain = [];
     var endChain = [];
 
@@ -221,7 +225,9 @@ function reconstructChain (intersection) {
       return;
     }
 
-    followingChains.forEach(function (chain) {
+    $(followingChains).each(function (idx) {
+      var chain = followingChains[idx];
+
       var user = chain[chain.length - 1];
 
       if (user == intersectingUser) {
@@ -233,7 +239,9 @@ function reconstructChain (intersection) {
       return;
     }
 
-    followersChains.forEach(function (chain) {
+    $(followersChains).each(function (idx) {
+      var chain = followersChains[idx];
+
       var user = chain[chain.length - 1];
 
       if (user == intersectingUser) {

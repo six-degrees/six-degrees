@@ -139,7 +139,9 @@ Search.prototype.processQueueItem = function (queueItem) {
   $request.then(function (user) {
     var users = self.getNextUsers(user);
 
-    users.forEach(function (u) {
+    $(users).each(function (idx) {
+      var u = users[idx];
+
       self.addNext(u, chain);
     });
 
