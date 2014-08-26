@@ -88,6 +88,8 @@ $form.on("submit", function (evt) {
   $progNotFound.fadeOut();
 
   if ($btnConnectTheDots.hasClass("btn-danger")) {
+    ga("send", "event", "Search", "Stop");
+
     $btnConnectTheDots.removeClass("btn-danger");
     $btnConnectTheDots.text("Lets connect these dots!");
 
@@ -98,6 +100,8 @@ $form.on("submit", function (evt) {
     followersSearch.reset();
     return;
   }
+
+  ga("send", "event", "Search", "Start");
 
   $btnConnectTheDots.addClass("btn-danger").text("Stop searching");
 
@@ -171,6 +175,11 @@ function updateCurrentStep (step) {
 }
 
 function displayChain (chain) {
+  ga("send", "event", "Finished", "Could connect users");
+
+  // Log the number of users in the chain
+  ga("send", "Results", "Connected", "Required", chain.length);
+
   $progDuring.fadeOut();
   $progFoundConnection.fadeIn();
 
@@ -193,6 +202,8 @@ function displayChain (chain) {
 }
 
 function cantBeFound () {
+  ga("send", "event", "Finished", "Can't connect users");
+
   var startingUser = $.trim($startingUser.val());
   var endingUser = $.trim($endingUser.val());
 
